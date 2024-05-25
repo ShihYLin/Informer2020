@@ -8,17 +8,17 @@ parser = argparse.ArgumentParser(description='[Informer] Long Sequences Forecast
 
 parser.add_argument('--model', type=str, required=True, default='informer',help='model of experiment, options: [informer, informerstack, informerlight(TBD)]')
 
-parser.add_argument('--data', type=str, required=True, default='ETTh1', help='data')
-parser.add_argument('--root_path', type=str, default='./data/ETT/', help='root path of the data file')
-parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')    
-parser.add_argument('--features', type=str, default='M', help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
-parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')
-parser.add_argument('--freq', type=str, default='h', help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
+parser.add_argument('--data', type=str, required=True, default='blast', help='data')
+parser.add_argument('--root_path', type=str, default='./data/', help='root path of the data file')
+parser.add_argument('--data_path', type=str, default='blastweather.csv', help='data file')    
+parser.add_argument('--features', type=str, default='MS', help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
+parser.add_argument('--target', type=str, default='categorical', help='target feature in S or MS task')
+parser.add_argument('--freq', type=str, default='d', help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
 parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
 
-parser.add_argument('--seq_len', type=int, default=96, help='input sequence length of Informer encoder')
-parser.add_argument('--label_len', type=int, default=48, help='start token length of Informer decoder')
-parser.add_argument('--pred_len', type=int, default=24, help='prediction sequence length')
+parser.add_argument('--seq_len', type=int, default=5, help='input sequence length of Informer encoder')
+parser.add_argument('--label_len', type=int, default=5, help='start token length of Informer decoder')
+parser.add_argument('--pred_len', type=int, default=4, help='prediction sequence length')
 # Informer decoder input: concat[start token series(label_len), zero padding series(pred_len)]
 
 parser.add_argument('--enc_in', type=int, default=7, help='encoder input size')
