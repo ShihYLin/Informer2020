@@ -12,6 +12,39 @@ from utils.timefeatures import time_features
 import warnings
 warnings.filterwarnings('ignore')
 
+def get_ind(df, category_column, perc1, perc2):
+    """
+    Sample the same percentage of data based on a categorical column value,
+    and store the remaining data samples in a new DataFrame with sampled data appended.
+
+    Parameters:
+    df (pd.DataFrame): The input DataFrame.
+    category_column (str): The name of the categorical column.
+    percentage (float): The percentage of rows to sample from each category (0 < percentage <= 1).
+
+    Returns:
+    pd.DataFrame: A DataFrame containing the sampled data followed by the remaining data.
+    """
+    if not (0 < perc1 <= 1 or 0 < perc2 <= 1):
+        raise ValueError("Percentage must be between 0 and 1")
+
+    # Sample the specified percentage from each category
+    sampled_df = df.groupby(category_column).apply(lambda x: x.sample(frac=perc1)).reset_index(drop=True)
+    train_ind = sampled_df.index
+    # Get the remaining data by dropping the sampled data from the original DataFrame
+    remaining_df = df.drop(sampled_df.index)
+
+    sampled_df2 = remaining_df.groupby(category_column).apply(lambda x: x.sample(frac=perc2)).reset_index(drop=True)
+    val_ind = sampled_df.index
+    remaining_df2 = df.drop(sampled_df.index)
+
+    test_ind = remaining_df2.index
+
+    # Append the remaining data to the sampled data
+    #result_df = pd.concat([sampled_df, remaining_df]).reset_index(drop=True)
+    
+    return (train_ind,val_ind,test_ind)
+
 class Dataset_ETT_hour(Dataset):
     def __init__(self, root_path, flag='train', size=None, 
                  features='S', data_path='ETTh1.csv', 
@@ -230,13 +263,17 @@ class Dataset_Custom(Dataset):
             cols = list(df_raw.columns); cols.remove(self.target); cols.remove('date')
         df_raw = df_raw[['date']+cols+[self.target]]
 
-        num_train = int(len(df_raw)*0.7)
-        num_test = int(len(df_raw)*0.2)
-        num_vali = len(df_raw) - num_train - num_test
-        border1s = [0, num_train-self.seq_len, len(df_raw)-num_test-self.seq_len]
-        border2s = [num_train, num_train+num_vali, len(df_raw)]
-        border1 = border1s[self.set_type]
-        border2 = border2s[self.set_type]
+        indices = get_ind(df_raw, 'fieldnum', 0.7, 0.33)
+        num_train = int(len(indices[0]))
+        num_vali = int(len(indices[1]))
+        num_test = int(len(indices[2]))
+        
+        
+        
+        # border1s = [0, num_train-self.seq_len, len(df_raw)-num_test-self.seq_len]
+        # border2s = [num_train, num_train+num_vali, len(df_raw)]
+        # border1 = border1s[self.set_type]
+        # border2 = border2s[self.set_type]
         
         if self.features=='M' or self.features=='MS':
             cols_data = df_raw.columns[1:]
@@ -245,21 +282,21 @@ class Dataset_Custom(Dataset):
             df_data = df_raw[[self.target]]
 
         if self.scale:
-            train_data = df_data[border1s[0]:border2s[0]]
+            train_data = df_data[indices[self.set_type]]
             self.scaler.fit(train_data.values)
             data = self.scaler.transform(df_data.values)
         else:
             data = df_data.values
             
-        df_stamp = df_raw[['date']][border1:border2]
+        df_stamp = df_raw[['date']][indices[self.set_type]]
         df_stamp['date'] = pd.to_datetime(df_stamp.date)
         data_stamp = time_features(df_stamp, timeenc=self.timeenc, freq=self.freq)
 
-        self.data_x = data[border1:border2]
+        self.data_x = data[indices[self.set_type]]
         if self.inverse:
-            self.data_y = df_data.values[border1:border2]
+            self.data_y = df_data.values[indices[self.set_type]]
         else:
-            self.data_y = data[border1:border2]
+            self.data_y = data[indices[self.set_type]]
         self.data_stamp = data_stamp
     
     def __getitem__(self, index):
